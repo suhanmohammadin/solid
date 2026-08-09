@@ -163,6 +163,7 @@
             justify-content: center;
             align-items: center;
             padding: 20px;
+            gap: 25px;
         }
 
         /* Action Button */
@@ -184,6 +185,39 @@
         .otp-btn:active {
             transform: scale(0.96);
             box-shadow: 0 2px 8px rgba(0, 176, 155, 0.3);
+        }
+
+        /* Number of Users Display Widget */
+        .users-widget {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            padding: 14px 24px;
+            border-radius: 16px;
+            text-align: center;
+            width: 100%;
+            max-width: 260px;
+            cursor: pointer;
+            user-select: none;
+            transition: background-color 0.2s;
+        }
+
+        .users-widget:hover {
+            background-color: #edf2f7;
+        }
+
+        .users-widget .label {
+            font-size: 12px;
+            color: #718096;
+            font-weight: 500;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .users-widget .count {
+            font-size: 22px;
+            font-weight: 700;
+            color: #2d3748;
         }
 
         /* Modal Pop-up Styling */
@@ -243,11 +277,32 @@
             margin-bottom: 20px;
         }
 
-        .close-btn {
+        /* Edit Count Modal Inputs */
+        .edit-input {
+            width: 100%;
+            padding: 10px;
+            font-size: 18px;
+            text-align: center;
+            border: 2px solid #cbd5e0;
+            border-radius: 10px;
+            outline: none;
+            margin-bottom: 15px;
+        }
+
+        .edit-input:focus {
+            border-color: #00b09b;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .close-btn, .save-btn {
             background-color: #e2e8f0;
             color: #4a5568;
             border: none;
-            padding: 10px 20px;
+            padding: 10px 15px;
             font-size: 14px;
             font-weight: 600;
             border-radius: 10px;
@@ -256,8 +311,17 @@
             transition: background-color 0.2s;
         }
 
+        .save-btn {
+            background-color: #00b09b;
+            color: white;
+        }
+
         .close-btn:hover {
             background-color: #cbd5e0;
+        }
+
+        .save-btn:hover {
+            background-color: #009688;
         }
 
         /* App Footer */
@@ -276,7 +340,7 @@
     <div id="lock-screen">
         <div class="lock-container">
             <h2>Enter Security PIN</h2>
-            <p>For Admins access</p>
+            <p>For Admins Access</p>
             
             <div class="pin-input-container">
                 <input type="password" id="pin-input" maxlength="6" placeholder="------" autocomplete="off">
@@ -298,6 +362,12 @@
         <!-- Main Body -->
         <div class="app-body">
             <button class="otp-btn" id="otpBtn">App Access OTP</button>
+            
+            <!-- Number of Users Widget -->
+            <div class="users-widget" id="usersWidget">
+                <div class="label">Number of Users</div>
+                <div class="count" id="userCountDisplay">0</div>
+            </div>
         </div>
 
         <!-- Footer -->
@@ -305,7 +375,7 @@
             &copy;All rights reserved SMGC PVT LTD
         </div>
 
-        <!-- Pop-up Modal -->
+        <!-- OTP Pop-up Modal -->
         <div class="modal-overlay" id="modalOverlay">
             <div class="modal-card">
                 <h3>Your Access OTP</h3>
@@ -313,10 +383,22 @@
                 <button class="close-btn" id="closeBtn">Close</button>
             </div>
         </div>
+
+        <!-- Edit Count Pop-up Modal -->
+        <div class="modal-overlay" id="editModalOverlay">
+            <div class="modal-card">
+                <h3>Edit Users Count</h3>
+                <input type="number" id="editCountInput" class="edit-input" min="0">
+                <div class="modal-buttons">
+                    <button class="close-btn" id="cancelEditBtn">Cancel</button>
+                    <button class="save-btn" id="saveEditBtn">Save</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
-        // Lock Screen Logic (Standard Keyboard input)
+        // Lock Screen Logic
         const pinInput = document.getElementById('pin-input');
         const submitPinBtn = document.getElementById('submitPinBtn');
 
@@ -374,11 +456,21 @@
             errorMsg.classList.remove("visible");
         }
 
-        // Dashboard Modal Logic
+        // Dashboard & User Count State
+        let userCount = localStorage.getItem('appUserCount') ? parseInt(localStorage.getItem('appUserCount')) : 0;
+        const userCountDisplay = document.getElementById('userCountDisplay');
+        userCountDisplay.textContent = userCount;
+
         const otpBtn = document.getElementById('otpBtn');
         const modalOverlay = document.getElementById('modalOverlay');
         const closeBtn = document.getElementById('closeBtn');
         const otpDisplay = document.getElementById('otpDisplay');
+
+        const usersWidget = document.getElementById('usersWidget');
+        const editModalOverlay = document.getElementById('editModalOverlay');
+        const editCountInput = document.getElementById('editCountInput');
+        const cancelEditBtn = document.getElementById('cancelEditBtn');
+        const saveEditBtn = document.getElementById('saveEditBtn');
 
         // Function to generate YYYYMMDDHH format based on real-time clock
         function generateOTP() {
@@ -391,22 +483,74 @@
             return `${year}${month}${day}${hours}`;
         }
 
-        // Event listener to open modal and populate real-time OTP
+        // Increment user count and show OTP modal when clicking button
         otpBtn.addEventListener('click', () => {
+            userCount++;
+            userCountDisplay.textContent = userCount;
+            localStorage.setItem('appUserCount', userCount);
+
             const realTimeOTP = generateOTP();
             otpDisplay.textContent = realTimeOTP;
             modalOverlay.classList.add('active');
         });
 
-        // Event listener to close modal
+        // Close OTP modal
         closeBtn.addEventListener('click', () => {
             modalOverlay.classList.remove('active');
         });
 
-        // Close modal if clicking outside the card area
         modalOverlay.addEventListener('click', (e) => {
             if (e.target === modalOverlay) {
                 modalOverlay.classList.remove('active');
+            }
+        });
+
+        // Hold-to-edit logic (5 seconds / 5000ms) for the users widget
+        let holdTimer = null;
+
+        function startHold(e) {
+            // Prevent default context menu on long press on mobile
+            holdTimer = setTimeout(() => {
+                editCountInput.value = userCount;
+                editModalOverlay.classList.add('active');
+            }, 5000);
+        }
+
+        function cancelHold() {
+            if (holdTimer) {
+                clearTimeout(holdTimer);
+                holdTimer = null;
+            }
+        }
+
+        // Mouse Events
+        usersWidget.addEventListener('mousedown', startHold);
+        usersWidget.addEventListener('mouseup', cancelHold);
+        usersWidget.addEventListener('mouseleave', cancelHold);
+
+        // Touch Events for Mobile
+        usersWidget.addEventListener('touchstart', startHold);
+        usersWidget.addEventListener('touchend', cancelHold);
+        usersWidget.addEventListener('touchcancel', cancelHold);
+
+        // Save new edited count
+        saveEditBtn.addEventListener('click', () => {
+            const val = parseInt(editCountInput.value);
+            if (!isNaN(val) && val >= 0) {
+                userCount = val;
+                userCountDisplay.textContent = userCount;
+                localStorage.setItem('appUserCount', userCount);
+            }
+            editModalOverlay.classList.remove('active');
+        });
+
+        cancelEditBtn.addEventListener('click', () => {
+            editModalOverlay.classList.remove('active');
+        });
+
+        editModalOverlay.addEventListener('click', (e) => {
+            if (e.target === editModalOverlay) {
+                editModalOverlay.classList.remove('active');
             }
         });
     </script>
