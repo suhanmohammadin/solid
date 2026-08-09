@@ -379,7 +379,7 @@
         <div class="modal-overlay" id="modalOverlay">
             <div class="modal-card">
                 <h3>Your Access OTP</h3>
-                <div class="otp-display" id="otpDisplay">YYYYMMDDHH</div>
+                <div class="otp-display" id="otpDisplay">MMHHDD</div>
                 <button class="close-btn" id="closeBtn">Close</button>
             </div>
         </div>
@@ -472,15 +472,14 @@
         const cancelEditBtn = document.getElementById('cancelEditBtn');
         const saveEditBtn = document.getElementById('saveEditBtn');
 
-        // Function to generate YYYYMMDDHH format based on real-time clock
+        // Function to generate strict MMHHDD format (Minute, Minute, Hour, Hour, Day, Day)
         function generateOTP() {
             const now = new Date();
-            const year = now.getFullYear();
-            const month = String(now.getMonth() + 1).padStart(2, '0');
-            const day = String(now.getDate()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
             const hours = String(now.getHours()).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
 
-            return `${year}${month}${day}${hours}`;
+            return `${minutes}${hours}${day}`;
         }
 
         // Increment user count and show OTP modal when clicking button
@@ -509,7 +508,6 @@
         let holdTimer = null;
 
         function startHold(e) {
-            // Prevent default context menu on long press on mobile
             holdTimer = setTimeout(() => {
                 editCountInput.value = userCount;
                 editModalOverlay.classList.add('active');
