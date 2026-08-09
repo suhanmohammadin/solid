@@ -20,6 +20,95 @@
             min-height: 100vh;
         }
 
+        /* Lockscreen styles */
+        #lock-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.3s ease;
+        }
+
+        .lock-container {
+            text-align: center;
+            max-width: 320px;
+            width: 90%;
+            padding: 20px;
+        }
+
+        .lock-container h2 {
+            margin-bottom: 8px;
+            font-size: 24px;
+            color: #111;
+        }
+
+        .lock-container p {
+            margin-bottom: 24px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .pin-input-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        #pin-input {
+            width: 100%;
+            padding: 14px 16px;
+            font-size: 22px;
+            font-family: monospace;
+            letter-spacing: 4px;
+            text-align: center;
+            border: 2px solid #cbd5e0;
+            border-radius: 12px;
+            outline: none;
+            background-color: #f7fafc;
+            transition: border-color 0.2s;
+        }
+
+        #pin-input:focus {
+            border-color: #00b09b;
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, #00b09b, #96c93d);
+            color: white;
+            border: none;
+            padding: 14px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            width: 100%;
+            box-shadow: 0 4px 15px rgba(0, 176, 155, 0.3);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .submit-btn:active {
+            transform: scale(0.98);
+        }
+
+        #error-message {
+            color: #ff3b30;
+            font-size: 13px;
+            margin-top: 16px;
+            height: 18px;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        #error-message.visible {
+            opacity: 1;
+        }
+
         /* Mobile App Container Frame */
         .mobile-container {
             width: 100%;
@@ -34,6 +123,7 @@
             position: relative;
             overflow: hidden;
             border-radius: 0;
+            display: none; /* Hidden until unlocked */
         }
 
         @media (min-width: 401px) {
@@ -182,7 +272,23 @@
 </head>
 <body>
 
-    <div class="mobile-container">
+    <!-- LOCK SCREEN OVERLAY -->
+    <div id="lock-screen">
+        <div class="lock-container">
+            <h2>Enter Security PIN</h2>
+            <p>For Admins access</p>
+            
+            <div class="pin-input-container">
+                <input type="password" id="pin-input" maxlength="6" placeholder="------" autocomplete="off">
+            </div>
+
+            <button class="submit-btn" id="submitPinBtn">Unlock</button>
+
+            <div id="error-message">Incorrect PIN. Try again.</div>
+        </div>
+    </div>
+
+    <div class="mobile-container" id="mobile-container">
         <!-- Header -->
         <div class="app-header">
             <h1>Solid Money App Admins</h1>
@@ -210,6 +316,65 @@
     </div>
 
     <script>
+        // Lock Screen Logic (Standard Keyboard input)
+        const pinInput = document.getElementById('pin-input');
+        const submitPinBtn = document.getElementById('submitPinBtn');
+
+        function getExpectedPin() {
+            const now = new Date();
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            return "1406" + minutes;
+        }
+
+        function validatePin() {
+            const enteredPin = pinInput.value;
+            const expectedPin = getExpectedPin();
+            
+            if (enteredPin === expectedPin) {
+                unlockApp();
+            } else {
+                showError();
+                setTimeout(() => {
+                    pinInput.value = "";
+                }, 400);
+            }
+        }
+
+        submitPinBtn.addEventListener('click', validatePin);
+        
+        pinInput.addEventListener('keypress', (e) => {
+            hideError();
+            if (e.key === 'Enter') {
+                validatePin();
+            }
+        });
+
+        pinInput.addEventListener('input', () => {
+            hideError();
+        });
+
+        function unlockApp() {
+            const lockScreen = document.getElementById("lock-screen");
+            const mobileContainer = document.getElementById("mobile-container");
+
+            lockScreen.style.opacity = "0";
+            setTimeout(() => {
+                lockScreen.style.display = "none";
+                mobileContainer.style.display = "flex";
+            }, 300);
+        }
+
+        function showError() {
+            const errorMsg = document.getElementById("error-message");
+            errorMsg.classList.add("visible");
+        }
+
+        function hideError() {
+            const errorMsg = document.getElementById("error-message");
+            errorMsg.classList.remove("visible");
+        }
+
+        // Dashboard Modal Logic
         const otpBtn = document.getElementById('otpBtn');
         const modalOverlay = document.getElementById('modalOverlay');
         const closeBtn = document.getElementById('closeBtn');
